@@ -48,9 +48,9 @@ class Head(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, head_size, n_head, n_embd):
+    def __init__(self, head_size, n_head, n_embd, block_size):
         super().__init__()
-        self.heads = nn.ModuleList([Head(head_size) for _ in range(n_head)])
+        self.heads = nn.ModuleList([Head(head_size, n_embd, block_size) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
 
     def forward(self, x):
@@ -81,7 +81,7 @@ class Block(nn.Module):
         # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
         head_size = config.n_embd // config.n_head
-        self.sa = MultiHeadAttention(head_size, config.n_head, config.n_embd)
+        self.sa = MultiHeadAttention(head_size, config.n_head, config.n_embd, config.block_size)
         self.ffwd = FeedFoward(config.n_embd)
         self.ln1 = nn.LayerNorm(config.n_embd)
         self.ln2 = nn.LayerNorm(config.n_embd)
@@ -106,6 +106,12 @@ class GPT(nn.Module):
         block_layers.append(nn.LayerNorm(config.n_embd))
         self.blocks = nn.Sequential(*block_layers)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
+    
+    def get_num_params(self, non_embedding=True):
+        n_params = sum(p.numel() for p in self.parameters())
+        if non_embedding:
+            n_params -= self.position_embedding_table.weight.numel()
+        return n_params
 
     def forward(self, idx, targets=None):
         device = idx.device
@@ -145,3 +151,4 @@ class GPT(nn.Module):
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx
+    
