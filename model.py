@@ -102,7 +102,7 @@ class GPT(nn.Module):
         self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
         block_layers = []
         for _ in range(config.n_layer):
-          block_layers.append(Block(config.n_embd, n_head=config.n_head))
+          block_layers.append(Block(config))
         block_layers.append(nn.LayerNorm(config.n_embd))
         self.blocks = nn.Sequential(*block_layers)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
@@ -128,6 +128,7 @@ class GPT(nn.Module):
 
         return logits, loss
     
+    @torch.no_grad()
     def generate(self, idx, max_new_tokens):
         # idx is (B, T) array of indices in the current context
         for _ in range(max_new_tokens):
