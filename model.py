@@ -19,6 +19,7 @@ class GPTConfig:
     n_layer: int = 2
     n_head: int = 4
     n_embd: int = 32
+    dropout: float = 0.0
 
 
 class Head(nn.Module):
@@ -48,26 +49,29 @@ class Head(nn.Module):
 class MultiHeadAttention(nn.Module):
     """ multiple heads of self-attention in parallel """
 
-    def __init__(self, head_size, n_head, n_embd, block_size):
+    def __init__(self, head_size, n_head, n_embd, block_size, dropout):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size, n_embd, block_size) for _ in range(n_head)])
         self.proj = nn.Linear(n_embd, n_embd)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.proj(out)
+        out = self.dropout(out)
         return out
     
 
 class FeedFoward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
 
-    def __init__(self, n_embd):
+    def __init__(self, n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
             nn.ReLU(),
             nn.Linear(4 * n_embd, n_embd),
+            nn.Dropout(dropout),
         )
 
     def forward(self, x):
@@ -81,8 +85,8 @@ class Block(nn.Module):
         # n_embd: embedding dimension, n_head: the number of heads we'd like
         super().__init__()
         head_size = config.n_embd // config.n_head
-        self.sa = MultiHeadAttention(head_size, config.n_head, config.n_embd, config.block_size)
-        self.ffwd = FeedFoward(config.n_embd)
+        self.sa = MultiHeadAttention(head_size, config.n_head, config.n_embd, config.block_size, config.dropout)
+        self.ffwd = FeedFoward(config.n_embd, config.dropout)
         self.ln1 = nn.LayerNorm(config.n_embd)
         self.ln2 = nn.LayerNorm(config.n_embd)
 
