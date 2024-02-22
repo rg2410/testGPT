@@ -8,7 +8,7 @@ class CharEncDec:
         self.itos = {i:ch for i,ch in enumerate(self.chars)}
 
     def encode(self, to_encode):
-        return [self.stoi[c] for c in to_enconde]
+        return [self.stoi[c] for c in to_encode]
     
     def decode(self, to_decode):
         return [self.stoi[c] for c in to_decode]
