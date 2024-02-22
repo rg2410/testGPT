@@ -11,4 +11,4 @@ class CharEncDec:
         return [self.stoi[c] for c in to_encode]
     
     def decode(self, to_decode):
-        return ''.join([self.stoi[c] for c in to_decode])
+        return ''.join([self.itos[c] for c in to_decode])
